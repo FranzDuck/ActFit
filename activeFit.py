@@ -47,6 +47,7 @@ class ActiveFitWindow:
         """Create the active fit window. """
         # Instantiate the variables
         self.xs, self.ys, self.func = xs, ys, func
+        self.fitmin, self.fitmax = np.min(xs), np.max(xs) # Default behavior: fit over all data
         self.sliders = []
         self.accept = False
 
@@ -57,7 +58,7 @@ class ActiveFitWindow:
         self.add_widgets(self.varnames)
         
         # Plot for the first time
-        self.ax.plot(xs, ys)
+        self.ax.plot(xs, ys, 'x')
         self.fitplot = None 
         self.plot_fit_function()
         plt.ion()
@@ -69,14 +70,13 @@ class ActiveFitWindow:
 
         """
         # Have main loop and let the user change function until fitted.
-        #  TODO: Implement a fitting loop <02-07-19, Philipp> # 
         popt, pcov = 0,0
         while True:
             if self.accept:
                 break
             # This is the fit loop
             plt.pause(.001)
-        return self.popt, self.pcov, self.params
+        return self.popt, self.pcov, self.params, self.fitmin, self.fitmax
 
     def single_fit(self, event):
         """Perform a single fit with given slider values
@@ -84,7 +84,11 @@ class ActiveFitWindow:
         :returns: popt, pcov
 
         """
-        self.popt, self.pcov = opt.curve_fit(self.func, self.xs, self.ys, p0=list(self.params.values()))
+        # Select range of values (because range can be selected)
+        xs = self.xs[np.logical_and(self.xs < self.fitmax, self.xs > self.fitmin)]
+        ys = self.ys[np.logical_and(self.xs < self.fitmax, self.xs > self.fitmin)]
+
+        self.popt, self.pcov = opt.curve_fit(self.func, xs, ys, p0=list(self.params.values()))
         for i, name in enumerate(self.params.keys()):
             self.params[name] = self.popt[i]
         self.plot_fit_function()
@@ -95,6 +99,10 @@ class ActiveFitWindow:
         self.accept = True
         plt.close()
         del self
+
+    def set_fitrange(self, vmin, vmax):
+        self.fitmin = vmin
+        self.fitmax = vmax
 
     def add_widgets(self, varnames):
         """This function adds the widgets expected for each fit parameter 
@@ -123,6 +131,9 @@ class ActiveFitWindow:
         axnext = plt.axes(ButtonPos)
         self.accb = mwdg.Button(axnext, 'Accept')
         self.accb.on_clicked(self.set_accept)
+
+        rectprops = dict(facecolor='blue', alpha=.5)
+        self.span_sel = mwdg.SpanSelector(self.ax, self.set_fitrange, 'horizontal', rectprops=rectprops)
         
         # Draw GUI
         plt.draw()
@@ -136,19 +147,26 @@ class ActiveFitWindow:
         # Remove old plot
         if not self.fitplot == None:
             self.ax.lines.remove(self.fitplot[0])
+
+        # Only plot in fit range:
+        xs = self.xs[np.logical_and(self.xs < self.fitmax, self.xs > self.fitmin)]
+        ys = self.ys[np.logical_and(self.xs < self.fitmax, self.xs > self.fitmin)]
+
         # Create new plot with (perhaps) updated values
-        yvals = self.func(self.xs, *self.params.values())
-        self.fitplot = self.ax.plot(self.xs, yvals)
-        left, right = np.min(np.array([yvals, self.ys])) - 1, np.max(np.array([yvals, self.ys])) + 1
+        yvals = self.func(xs, *self.params.values())
+        self.fitplot = self.ax.plot(xs, yvals)
+        
+        # Set range to include fit function and data
+        allys = np.array([*yvals, *self.ys])
+        left, right = np.min(allys) - 1, np.max(allys) + 1
         self.ax.set_ylim([left, right])
         plt.draw()
 
     def update_fit_func(self, nameOfVar, valueOfVar):
         """Update the plot of the fit function for a parameter with name and val
 
-        :nameOfVar: TODO
-        :valueOfVar: TODO
-        :returns: TODO
+        :nameOfVar: name of the variable to change 
+        :valueOfVar: new value for the variable
 
         """
         self.params[nameOfVar] = valueOfVar
@@ -197,7 +215,7 @@ def active_fit(xs, ys, func):
     :xs: x values of the data 
     :ys: y values of the data
     :func: function one wants to fit
-    :returns: popt, pcov
+    :returns: popt, pcov, params, (fitmin, fitmax)
 
     """
     # Load old fit if existing
@@ -209,13 +227,13 @@ def active_fit(xs, ys, func):
 
     # Active fit menu in fit window fw
     fw = ActiveFitWindow(xs, ys, func)
-    popt, pcov, params = fw.fit()
+    popt, pcov, params, fitmin, fitmax = fw.fit()
 
     # Save fit parameters
     save_fits(params, pcov)
 
     # return fit
-    return popt, pcov, params
+    return popt, pcov, params, (fitmin, fitmax)
 
 #######################################################################
 #                           Test functions                            #
@@ -237,9 +255,10 @@ def main():
     fig, ax = plt.subplots()
     ax.plot(xs, ys, 'x', label='Data')
     plt.ion()
-    popt, pcov, _ = active_fit(xs, ys, func)
+    popt, pcov, _, (xmin, xmax) = active_fit(xs, ys, func)
     
     plt.ioff()
+    xs = xs[np.logical_and(xs>xmin, xs<xmax)]
     ax.plot(xs, func(xs, *popt), label='Fit')
     plt.legend()
     plt.show()
