@@ -192,7 +192,7 @@ def load_fits(filename=saveFilename):
     """
     data = json.load(open(filename, 'r'))
     popts, pcovs = [], []
-    for key, (popt, pcov) in data.items():
+    for key, (popt, pcov) in data.items(): 
         popts.append(popt)
         pcovs.append(pcov)
         data[key] = popt
@@ -209,7 +209,7 @@ def save_fits(params, pcov, filename=saveFilename):
         params[key] = (val, list(pcov[i]))
     json.dump(params, open(filename, 'w'))
 
-def active_fit(xs, ys, func):
+def active_fit(xs, ys, func, name='Fit'):
     """Main function for active fit.
 
     :xs: x values of the data 
@@ -218,6 +218,7 @@ def active_fit(xs, ys, func):
     :returns: popt, pcov, params, (fitmin, fitmax)
 
     """
+    saveFilename = f'{name}Data.json'
     # Load old fit if existing
     if os.path.exists(saveFilename):
         popt, pcov, params = load_fits(saveFilename)
@@ -230,7 +231,7 @@ def active_fit(xs, ys, func):
     popt, pcov, params, fitmin, fitmax = fw.fit()
 
     # Save fit parameters
-    save_fits(params, pcov)
+    save_fits(params, pcov, filename=saveFilename)
 
     # return fit
     return popt, pcov, params, (fitmin, fitmax)
@@ -255,7 +256,7 @@ def main():
     fig, ax = plt.subplots()
     ax.plot(xs, ys, 'x', label='Data')
     plt.ion()
-    popt, pcov, _, (xmin, xmax) = active_fit(xs, ys, func)
+    popt, pcov, _, (xmin, xmax) = active_fit(xs, ys, func, name='Test')
     
     plt.ioff()
     xs = xs[np.logical_and(xs>xmin, xs<xmax)]
