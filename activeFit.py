@@ -187,18 +187,20 @@ def load_fits(filename=saveFilename):
     """Loads old fit values if existing.
 
     :filename: Filename of the fit data file you want to load 
-    :returns: popt, pcov, names : of the last saved fit with associated
+    :returns: popt, pcov, names, xmin, xmax : of the last saved fit with associated
         variable names 
     """
     data = json.load(open(filename, 'r'))
+    xmin, xmax = data['range']
+    data = data['fits']
     popts, pcovs = [], []
     for key, (popt, pcov) in data.items(): 
         popts.append(popt)
         pcovs.append(pcov)
         data[key] = popt
-    return np.array(popts), np.array(pcovs), data
+    return np.array(popts), np.array(pcovs), data, (xmin , xmax)
 
-def save_fits(params, pcov, filename=saveFilename):
+def save_fits(params, pcov, xmin, xmax, filename=saveFilename):
     """This functions saves the fit parameters to the disc.
 
     :params: dictionary of variable name, and value pairs
@@ -207,7 +209,8 @@ def save_fits(params, pcov, filename=saveFilename):
     """
     for i, (key, val) in enumerate(params.items()):
         params[key] = (val, list(pcov[i]))
-    json.dump(params, open(filename, 'w'))
+    savedat = {'fits':params, 'range':(xmin, xmax)}
+    json.dump(savedat, open(filename, 'w'))
 
 def active_fit(xs, ys, func, name='Fit'):
     """Main function for active fit.
@@ -221,17 +224,17 @@ def active_fit(xs, ys, func, name='Fit'):
     saveFilename = f'{name}Data.json'
     # Load old fit if existing
     if os.path.exists(saveFilename):
-        popt, pcov, params = load_fits(saveFilename)
+        popt, pcov, params, (fitmin, fitmax) = load_fits(saveFilename)
         # If fit data exists, query new fit
         if input('Do you want to fit new? (no for "no fit", else new) ') == 'no':
-            return popt, pcov, params
+            return popt, pcov, params, (fitmin, fitmax)
 
     # Active fit menu in fit window fw
     fw = ActiveFitWindow(xs, ys, func)
     popt, pcov, params, fitmin, fitmax = fw.fit()
 
     # Save fit parameters
-    save_fits(params, pcov, filename=saveFilename)
+    save_fits(params, pcov, fitmin, fitmax, filename=saveFilename)
 
     # return fit
     return popt, pcov, params, (fitmin, fitmax)
