@@ -5,7 +5,6 @@ import tkinter.ttk as ttk
 import numpy as np
 import scipy.optimize as opt
 
-from ..fit import Fit
 from .param_slider import ParamSlider
 from .utils import *
 
@@ -43,16 +42,20 @@ class FitUI(ttk.Frame):
         self.event_generate("<<FITUI.UPDATED>>")
 
     def perform_fit(self):
-        params, cov = opt.curve_fit(
-            self.master.func,
-            self.master.xs,
-            self.master.data,
-            p0=list(self.params.values()),
-            bounds=[
-                [v for v, _ in self.boundaries.values()],
-                [v for _, v in self.boundaries.values()],
-            ],
-        )
-        for name, value in zip(self._sliders, params):
-            self._sliders[name].set_scale_value(value)
-        self.event_generate("<<FITUI.DONE>>")
+        try:
+            params, cov = opt.curve_fit(
+                self.master.func,
+                self.master.xs,
+                self.master.data,
+                p0=list(self.params.values()),
+                bounds=[
+                    [v for v, _ in self.boundaries.values()],
+                    [v for _, v in self.boundaries.values()],
+                ],
+            )
+            for name, value in zip(self._sliders, params):
+                self._sliders[name].set_scale_value(value)
+            self.event_generate("<<FITUI.DONE>>")
+        except Exception as e:
+            messagebox.showerror(type(e).__name__, e.args[0])
+            raise e

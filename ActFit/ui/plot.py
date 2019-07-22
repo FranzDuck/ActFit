@@ -37,29 +37,33 @@ class Plot(ttk.Frame):
         self._build_canvas()
 
     def plot(self):
-        if self.master.plot_ready:
-            xs = self.master.xs
+        try:
+            if self.master.plot_ready:
+                xs = self.master.xs
 
-            data_ys = self.master.data
-            if not self._data_plot:
-                self._data_plot = self._ax.scatter(
-                    xs, data_ys, marker="x", color="darkorange"
-                )
-            else:
-                self._data_plot.set_offsets(np.column_stack((xs, data_ys)))
+                data_ys = self.master.data
+                if not self._data_plot:
+                    self._data_plot = self._ax.scatter(
+                        xs, data_ys, marker="x", color="darkorange"
+                    )
+                else:
+                    self._data_plot.set_offsets(np.column_stack((xs, data_ys)))
 
-            fit_ys = self.master.ys
-            if not self._fit_plot:
-                self._fit_plot, *_ = self._ax.plot(xs, fit_ys, color="steelblue")
-            else:
-                self._fit_plot.set_data(xs, fit_ys)
+                fit_ys = self.master.ys
+                if not self._fit_plot:
+                    self._fit_plot, *_ = self._ax.plot(xs, fit_ys, color="steelblue")
+                else:
+                    self._fit_plot.set_data(xs, fit_ys)
 
-            all_ys = np.array([*fit_ys, *data_ys])
-            left, right = np.min(all_ys) - 1, np.max(all_ys) + 1
-            self._ax.set_ylim([left, right])
+                all_ys = np.array([*fit_ys, *data_ys])
+                left, right = np.min(all_ys) - 1, np.max(all_ys) + 1
+                self._ax.set_ylim([left, right])
 
-            left, right = np.min(xs) - 1, np.max(xs) + 1
-            self._ax.set_xlim([left, right])
+                left, right = np.min(xs) - 1, np.max(xs) + 1
+                self._ax.set_xlim([left, right])
 
-            self._ax.grid(True)
-            self._canvas.draw()
+                self._ax.grid(True)
+                self._canvas.draw()
+        except Exception as e:
+            messagebox.showerror(type(e).__name__, e.args[0])
+            raise e
