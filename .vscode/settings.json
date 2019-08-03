@@ -1,0 +1,7 @@
+{
+    "python.pythonPath": "/home/timfi/.local/share/virtualenvs/ActFit-FGx54i7F/bin/python",
+    "editor.formatOnSave": true,
+    "python.formatting.provider": "black",
+    "python.linting.mypyEnabled": true,
+    "python.linting.enabled": true
+}

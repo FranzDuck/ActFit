@@ -7,13 +7,10 @@ verify_ssl = true
 mypy = "*"
 black = "*"
 setuptools = "*"
-actfit = {editable = true,path = "."}
+twine = "*"
 
 [packages]
-matplotlib = "*"
-numpy = "*"
-scipy = "*"
-dill = "*"
+actfit = {editable = true,path = "."}
 
 [requires]
 python_version = "3.7"
